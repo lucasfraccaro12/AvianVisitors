@@ -214,7 +214,7 @@ def _frame_css(headline_px, eyebrow_px, lowercase, pad_top, pad_side, pad_bottom
         f".static-head {{ padding: 0 8px 14px !important; }}"
         f".static-head .pre {{ font-size: {eyebrow_px}px !important; }}"
         f".static-head h1 {{ font-size: {headline_px}px !important; }}"
-        f".static-head .frame-location {{ font: italic 400 {eyebrow_px}px/1.22 ui-serif, \"Iowan Old Style\","
+        f".static-head .place-line {{ font: italic 400 {eyebrow_px}px/1.22 ui-serif, \"Iowan Old Style\","
         f" Georgia, serif; color: var(--ink-2); letter-spacing: 0.06em; margin-top: 10px; }}"
         ".gtile-label text { fill: #000 !important; filter: none !important;"
         " font-weight: 400 !important; }"
@@ -544,9 +544,9 @@ def shoot(url, out, *, title=None, subtitle=None, vw=600, vh=800, dsf=2,
                     page.evaluate("""t => {
                       const h = document.querySelector('.static-head');
                       if (!h) return;
-                      let e = h.querySelector('.frame-location');
+                      let e = h.querySelector('.place-line');
                       if (!t) { if (e) e.remove(); return; }
-                      if (!e) { e = document.createElement('div'); e.className = 'frame-location'; h.appendChild(e); }
+                      if (!e) { e = document.createElement('div'); e.className = 'place-line'; h.appendChild(e); }
                       e.textContent = t;
                     }""", f"in {location}" if location else "")
                     # empty_text=None hides the line: gen 3 shows the bare nest.

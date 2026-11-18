@@ -172,7 +172,9 @@ def fit_panel(img):
 def _paper(img):
     """Median of the four corners, robust to a stray inked corner."""
     w, h = img.size
-    px = (img.getpixel(p) for p in ((4, 4), (w - 5, 4), (4, h - 5), (w - 5, h - 5)))
+    l, t = min(4, w - 1), min(4, h - 1)  # tiny images: stay inside the edges
+    r, b = max(0, w - 5), max(0, h - 5)
+    px = (img.getpixel(p) for p in ((l, t), (r, t), (l, b), (r, b)))
     return tuple(int(statistics.median(c)) for c in zip(*px))
 
 
