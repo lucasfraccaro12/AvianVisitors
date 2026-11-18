@@ -229,7 +229,7 @@ def _centroid_x(img, paper):
 # Content layout inside the A5 opening: the title and collage are sized
 # independently (as fractions of the opening width), so tuning one leaves the
 # other untouched. gap is a fraction of the opening height.
-TITLE_H_FRAC, COLLAGE_FRAC, GAP_FRAC = 0.065, 0.9, 0.1  # 0.9: collage fills the 7.3" opening
+TITLE_H_FRAC, COLLAGE_FRAC, GAP_FRAC, EDGE_FRAC = 0.065, 0.97, 0.035, 0.05  # 7.3": collage fills the opening, title tucked up close
 
 
 def _scale_title(title, paper, target_h):
@@ -279,7 +279,9 @@ def mat_and_center(img, mat, opening):
     tb = _region_bbox(img, paper, top, split[0]) if split else None
     cb = _region_bbox(img, paper, split[1], bot + 1) if split else None
     ow, oh = opening_size(opening)
-    box_w, box_h = ow * (1 - mat), oh * (1 - mat)
+    # Keep a small margin inside the opening so a hand-cut mat never clips
+    # the title or the lowest bird.
+    box_w, box_h = ow * (1 - mat - EDGE_FRAC), oh * (1 - mat - EDGE_FRAC)
     if not (tb and cb):
         return _place(img.crop(full), paper, mat, opening)
     title = _scale_title(img.crop(tb), paper, box_h * TITLE_H_FRAC)
@@ -296,6 +298,11 @@ def mat_and_center(img, mat, opening):
     # A wildly off-centre collage can push the centroid-mirrored width (2*half)
     # past the A5 opening; shrink only the collage, never the fixed-size title,
     # so nothing spills under the physical mat.
+    if 2 * half > box_w and collage.width <= box_w:
+        # Ink-weight centring would push it past the opening, but the collage
+        # itself fits: centre it by its box instead of shrinking the birds.
+        ccx = collage.width / 2
+        half = ccx
     if 2 * half > box_w:
         s = box_w / (2 * half)
         collage = collage.resize((max(1, round(collage.width * s)), max(1, round(collage.height * s))), Image.LANCZOS)
