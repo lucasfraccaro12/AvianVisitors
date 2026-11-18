@@ -310,12 +310,14 @@ def mat_and_center(img, mat, opening):
         collage = collage.resize((max(1, round(collage.width * s)), max(1, round(collage.height * s))), Image.LANCZOS)
         ccx = round(ccx * s)
         half = max(ccx, collage.width - ccx)
-    cw = round(max(title.width, 2 * half))
-    comp = Image.new("RGB", (cw, title.height + gap + collage.height), paper)
-    comp.paste(title, ((cw - title.width) // 2, 0))
-    comp.paste(collage, (round(cw / 2 - ccx), title.height + gap))
     canvas = Image.new("RGB", (PANEL_W, PANEL_H), paper)
-    canvas.paste(comp, ((PANEL_W - comp.width) // 2, (PANEL_H - comp.height) // 2))
+    # Title pinned to the top of the opening; the birds centred in the space
+    # left beneath it (instead of centring title + birds as one block).
+    box_top = round((PANEL_H - box_h) / 2)
+    below = box_top + title.height + gap
+    spare = max(0, round(box_top + box_h) - below - collage.height)
+    canvas.paste(title, ((PANEL_W - title.width) // 2, box_top))
+    canvas.paste(collage, (round(PANEL_W / 2 - ccx), below + spare // 2))
     return canvas
 
 
