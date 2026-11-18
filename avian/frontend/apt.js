@@ -14,7 +14,7 @@
   // with clean cutouts, so drop every cached copy.
   // Keep table and one-off art revisions separate from the library-wide
   // versions above. A corrected species should not evict every bird image.
-  var TABLE_VERSION = 'r13';
+  var TABLE_VERSION = 'r14';
   var BUNDLE_ASSETS_MAX_BYTES = 32 * 1024 * 1024;
   var BUNDLE_ASSETS_MAX_POSES = 10000;
   var BUNDLE_SCIENTIFIC_SLUG_MAX = 163;

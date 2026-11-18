@@ -214,6 +214,8 @@ def _frame_css(headline_px, eyebrow_px, lowercase, pad_top, pad_side, pad_bottom
         f".static-head {{ padding: 0 8px 14px !important; }}"
         f".static-head .pre {{ font-size: {eyebrow_px}px !important; }}"
         f".static-head h1 {{ font-size: {headline_px}px !important; }}"
+        f".static-head .frame-location {{ font: italic 400 {eyebrow_px}px/1.22 ui-serif, \"Iowan Old Style\","
+        f" Georgia, serif; color: var(--ink-2); letter-spacing: 0.06em; margin-top: 10px; }}"
         ".gtile-label text { fill: #000 !important; filter: none !important;"
         " font-weight: 400 !important; }"
         ".empty-nest .empty { font-size: 18px !important; font-weight: 650 !important;"
@@ -415,7 +417,8 @@ def shoot(url, out, *, title=None, subtitle=None, vw=600, vh=800, dsf=2,
           count_exp=0.4, cluster_pad=1, label_min_px=11, small_floor=0.04, window_hours=None,
           timeout_ms=45000, user=None, password=None, species=None, cutout_base=None,
           cutout_local=None, cutout_resolver=None, dims_path=None, masks_path=None,
-          bundle_assets=None, empty_text="listening for birds…", bird_names=False, capture=None):
+          bundle_assets=None, empty_text="listening for birds…", bird_names=False, capture=None,
+          location=None):
     size = _output_size(vw, vh, dsf)
     pad_side, pad_top, pad_bottom = int(vw * mat), int(vh * mat * 0.92), int(vh * mat)
     auth = "Basic " + base64.b64encode(f"{user}:{password or ''}".encode()).decode() if user else None
@@ -537,6 +540,15 @@ def shoot(url, out, *, title=None, subtitle=None, vw=600, vh=800, dsf=2,
                         page.evaluate("t=>{const e=document.querySelector('.static-head .pre'); if(e)e.textContent=t;}", title)
                     if subtitle is not None:
                         page.evaluate("s=>{const e=document.querySelector('.static-head h1'); if(e)e.textContent=s;}", subtitle)
+                    # optional "in <place>" line under the headline
+                    page.evaluate("""t => {
+                      const h = document.querySelector('.static-head');
+                      if (!h) return;
+                      let e = h.querySelector('.frame-location');
+                      if (!t) { if (e) e.remove(); return; }
+                      if (!e) { e = document.createElement('div'); e.className = 'frame-location'; h.appendChild(e); }
+                      e.textContent = t;
+                    }""", f"in {location}" if location else "")
                     # empty_text=None hides the line: gen 3 shows the bare nest.
                     if empty_text is None:
                         page.evaluate("() => { const e = document.querySelector('.empty'); if (e) e.style.display = 'none'; }")

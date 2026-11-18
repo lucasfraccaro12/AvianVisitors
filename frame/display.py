@@ -32,7 +32,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11
     import tomli as tomllib
 
-PANEL_W, PANEL_H = 1200, 1600  # portrait; the panel itself is 1600x1200
+PANEL_W, PANEL_H = 480, 800  # portrait; Inky Impression 7.3" (the panel itself is 800x480)
 
 # Approximate Spectra-6 inks, used only for --preview. On hardware the Inky
 # library maps to the panel's real palette.
@@ -54,6 +54,7 @@ DEFAULTS = {
     "shoot_headline_px": 42, "shoot_eyebrow_px": 18, "shoot_lowercase": False,
     "shoot_mat": 0.04, "shoot_small_floor": 0.04, "shoot_count_exp": 0.65,
     "bird_names": False,
+    "shoot_location": "",  # shown as "in <location>" under the headline; "" hides it
     "mat": 0.0,             # extra global shrink of the content inside the A5 opening
     "opening": 0.7071,      # opening height as a panel fraction; 0.7071 preserves A5
     "rotate": 90,           # 90 or 270 if the frame hangs the other way up
@@ -162,8 +163,9 @@ def get_image(src, timeout, auth=None):
 
 
 def fit_panel(img):
-    if img.size != (PANEL_W, PANEL_H):
-        img = img.resize((PANEL_W, PANEL_H), Image.LANCZOS)
+    # 7.3" panel: keep the capture's own size and shape. The capture is 3:4 but
+    # this panel is 3:5, so resizing here would squash it; mat_and_center()
+    # scales the title and collage onto the PANEL_W x PANEL_H canvas instead.
     return img
 
 
@@ -227,7 +229,27 @@ def _centroid_x(img, paper):
 # Content layout inside the A5 opening: the title and collage are sized
 # independently (as fractions of the opening width), so tuning one leaves the
 # other untouched. gap is a fraction of the opening height.
-TITLE_H_FRAC, COLLAGE_FRAC, GAP_FRAC = 0.065, 0.66, 0.1
+TITLE_H_FRAC, COLLAGE_FRAC, GAP_FRAC = 0.065, 0.9, 0.1  # 0.9: collage fills the 7.3" opening
+
+
+def _scale_title(title, paper, target_h):
+    """Scale the title so everything down to the bottom of the headline (its
+    tallest line) is target_h tall. Lines below the headline, such as the
+    optional "in <location>" line, then hang underneath at the same scale
+    instead of shrinking the whole title."""
+    mask = ImageChops.difference(title, Image.new("RGB", title.size, paper))
+    mask = mask.convert("L").point(lambda p: 255 if p > 34 else 0)
+    levels = list(mask.resize((1, title.height), Image.BOX).tobytes())
+    runs, start = [], None
+    for y, v in enumerate(levels + [0]):
+        if v > 2 and start is None:
+            start = y
+        elif v <= 2 and start is not None:
+            runs.append((start, y))
+            start = None
+    ref = max(runs, key=lambda r: r[1] - r[0])[1] if runs else title.height
+    s = target_h / max(1, ref)
+    return title.resize((max(1, round(title.width * s)), max(1, round(title.height * s))), Image.LANCZOS)
 
 
 def mat_and_center(img, mat, opening):
@@ -260,7 +282,7 @@ def mat_and_center(img, mat, opening):
     box_w, box_h = ow * (1 - mat), oh * (1 - mat)
     if not (tb and cb):
         return _place(img.crop(full), paper, mat, opening)
-    title = _scale_h(img.crop(tb), box_h * TITLE_H_FRAC)
+    title = _scale_title(img.crop(tb), paper, box_h * TITLE_H_FRAC)
     gap = round(box_h * GAP_FRAC)
     # Size the collage to fill the room left under the fixed-size title,
     # binding on whichever of width or remaining height runs out first, so the
@@ -385,6 +407,7 @@ def obtain_image(cfg, species=None, bundle=None, *, capture=None):
         out = os.path.join(os.path.expanduser(cfg["cache"]), "frame.png")
         os.makedirs(os.path.dirname(out), exist_ok=True)
         shoot_birdweather(out, species, title=cfg["shoot_title"], subtitle=cfg["shoot_subtitle"],
+                          location=cfg.get("shoot_location") or None,
                           timeout_ms=cfg["timeout"] * 1000, bird_names=cfg["bird_names"],
                           capture=capture, **bundle_options)
         return Image.open(out).convert("RGB")
@@ -393,6 +416,7 @@ def obtain_image(cfg, species=None, bundle=None, *, capture=None):
         out = os.path.join(os.path.expanduser(cfg["cache"]), "shot.png")
         os.makedirs(os.path.dirname(out), exist_ok=True)
         shoot(cfg["base_url"], out, title=cfg["shoot_title"], subtitle=cfg["shoot_subtitle"],
+              location=cfg.get("shoot_location") or None,
               headline_px=cfg["shoot_headline_px"], eyebrow_px=cfg["shoot_eyebrow_px"],
               lowercase=cfg["shoot_lowercase"], mat=cfg["shoot_mat"],
               small_floor=cfg["shoot_small_floor"], count_exp=cfg["shoot_count_exp"], timeout_ms=cfg["timeout"] * 1000,
