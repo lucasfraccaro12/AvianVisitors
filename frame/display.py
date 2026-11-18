@@ -56,7 +56,7 @@ DEFAULTS = {
     "bird_names": False,
     "shoot_location": "",  # shown as "in <location>" under the headline; "" hides it
     "mat": 0.0,             # extra global shrink of the content inside the A5 opening
-    "opening": 0.7071,      # opening height as a panel fraction; 0.7071 preserves A5
+    "opening": 0.84,        # opening height as a panel fraction; 0.84 = the 7.3" mat window (95 x 134 mm)
     "rotate": 90,           # 90 or 270 if the frame hangs the other way up
     "saturation": 0.6,
     "panel": "",            # "el133uf1" forces the 13.3" driver if auto() fails
